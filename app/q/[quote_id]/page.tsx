@@ -117,7 +117,8 @@ export default function QuotePublicView() {
         {/* Header */}
         <div className="flex justify-between items-start p-8 border-b border-gray-200">
           <div>
-            <div className="text-lg font-bold text-gray-900">Parque Industrial Disdo</div>
+            <div className="text-lg font-bold text-gray-900">Metpro SRL</div>
+            <div className="text-sm text-gray-500 mt-1">Parque Industrial Disdo</div>
             <div className="text-sm text-gray-500 mt-1">Calle Central No. 1, Hato Nuevo Palave</div>
             <div className="text-sm text-gray-500">Tel: (829) 439-8476 | RNC: 131-71683-2</div>
           </div>
