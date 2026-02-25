@@ -210,7 +210,7 @@ export default function QuotePublicView() {
         {/* Actions */}
         <div className="p-8 flex justify-center">
           <a
-            href={`${API_URL}/quotes/${quoteId}/pdf`}
+            href={`${API_URL}/quotes/${quoteId}/public/pdf`}
             target="_blank"
             rel="noopener noreferrer"
             className="px-8 py-3 bg-gray-900 text-white text-sm font-semibold tracking-widest uppercase hover:bg-gray-700 transition-colors"
