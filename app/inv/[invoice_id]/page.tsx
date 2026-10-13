@@ -89,7 +89,7 @@ export default function InvoicePublicView() {
   useEffect(() => {
     if (!invoiceId) return;
 
-    fetch(`${API_URL}/invoices/${invoiceId}/public`)
+    fetch(`${API_URL}/invoices/public/${invoiceId}`)
       .then((r) => {
         if (!r.ok) throw new Error("Invoice not found");
         return r.json();
@@ -212,7 +212,7 @@ export default function InvoicePublicView() {
         {/* PDF */}
         <div className="p-8 flex justify-center">
           <a
-            href={`${API_URL}/invoices/${invoiceId}/public/pdf`}
+            href={`${API_URL}/invoices/public/${invoiceId}/pdf`}
             target="_blank"
             rel="noopener noreferrer"
             className="px-8 py-3 bg-gray-900 text-white text-sm font-semibold tracking-widest uppercase hover:bg-gray-700 transition-colors"
