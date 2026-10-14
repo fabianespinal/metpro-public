@@ -78,7 +78,7 @@ export default function QuotePublicView() {
 
   useEffect(() => {
     if (!quoteId) return;
-    fetch(`${API_URL}/quotes/${quoteId}/public`)
+    fetch(`${API_URL}/quotes/public/${quoteId}`)
       .then((r) => {
         if (!r.ok) throw new Error("Quote not found");
         return r.json();
@@ -211,7 +211,7 @@ export default function QuotePublicView() {
         {/* Actions */}
         <div className="p-8 flex justify-center">
           <a
-            href={`${API_URL}/quotes/${quoteId}/public/pdf`}
+            href={`${API_URL}/quotes/public/${quoteId}/pdf`}
             target="_blank"
             rel="noopener noreferrer"
             className="px-8 py-3 bg-gray-900 text-white text-sm font-semibold tracking-widest uppercase hover:bg-gray-700 transition-colors"
