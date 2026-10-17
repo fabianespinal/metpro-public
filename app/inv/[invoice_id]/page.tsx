@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { unwrapEnvelope } from "@/lib/publicQuote";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
@@ -94,7 +95,11 @@ export default function InvoicePublicView() {
         if (!r.ok) throw new Error("Invoice not found");
         return r.json();
       })
-      .then(setInvoice)
+      .then((data) => {
+        const inv = unwrapEnvelope(data) as Invoice | null;
+        if (!inv || typeof inv !== "object") throw new Error("Invalid invoice");
+        setInvoice({ ...inv, items: Array.isArray(inv.items) ? inv.items : [] });
+      })
       .catch(() => setError("No se pudo cargar la factura."))
       .finally(() => setLoading(false));
   }, [invoiceId]);

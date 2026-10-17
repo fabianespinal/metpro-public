@@ -1,35 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { normalizeQuote, groupItems, type PublicItem, type PublicQuoteData } from "@/lib/publicQuote";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
-
-interface QuoteItem {
-  product_name: string;
-  quantity: number;
-  unit_price: number;
-  discount_type?: string;
-  discount_value?: number;
-}
-
-interface Quote {
-  quote_id: string;
-  project_name: string;
-  notes: string;
-  status: string;
-  created_at: string;
-  valid_until?: string;
-  payment_terms?: string;
-  total_amount: number;
-  company_name: string;
-  company_address?: string;
-  contact_name: string;
-  contact_email: string;
-  contact_phone: string;
-  items: QuoteItem[];
-  included_charges: any;
-}
 
 function fmt(n: number) {
   return new Intl.NumberFormat("en-US", {
@@ -38,15 +13,15 @@ function fmt(n: number) {
   }).format(n);
 }
 
-function calcTotals(items: QuoteItem[], charges: any) {
+function calcTotals(items: PublicItem[], charges: any, dynamicCharges: { percentage: number }[]) {
   const itemsTotal = items.reduce((sum, i) => sum + i.quantity * i.unit_price, 0);
   let totalDiscounts = 0;
   for (const item of items) {
     const subtotal = item.quantity * item.unit_price;
     if (item.discount_type === "percentage") {
-      totalDiscounts += subtotal * ((item.discount_value || 0) / 100);
+      totalDiscounts += subtotal * ((item.discount_value) / 100);
     } else if (item.discount_type === "fixed") {
-      totalDiscounts += item.discount_value || 0;
+      totalDiscounts += item.discount_value;
     }
   }
   const afterDiscount = itemsTotal - totalDiscounts;
@@ -55,7 +30,8 @@ function calcTotals(items: QuoteItem[], charges: any) {
   const insurance = charges?.insurance ? afterDiscount * ((charges.insurance_percentage || 1) / 100) : 0;
   const transport = charges?.transport ? afterDiscount * ((charges.transport_percentage || 3) / 100) : 0;
   const contingency = charges?.contingency ? afterDiscount * ((charges.contingency_percentage || 3) / 100) : 0;
-  const subtotalGeneral = afterDiscount + supervision + admin + insurance + transport + contingency;
+  const dynamicTotal = dynamicCharges.reduce((sum, d) => sum + afterDiscount * (d.percentage / 100), 0);
+  const subtotalGeneral = afterDiscount + supervision + admin + insurance + transport + contingency + dynamicTotal;
   const itbis = subtotalGeneral * 0.18;
   const grandTotal = subtotalGeneral + itbis;
   return {
@@ -65,14 +41,14 @@ function calcTotals(items: QuoteItem[], charges: any) {
     insurance, insurancePct: charges?.insurance_percentage || 1,
     transport, transportPct: charges?.transport_percentage || 3,
     contingency, contingencyPct: charges?.contingency_percentage || 3,
-    subtotalGeneral, itbis, grandTotal,
+    dynamicTotal, subtotalGeneral, itbis, grandTotal,
   };
 }
 
 export default function QuotePublicView() {
   const params = useParams();
   const quoteId = params?.quote_id as string;
-  const [quote, setQuote] = useState<Quote | null>(null);
+  const [quote, setQuote] = useState<PublicQuoteData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -83,7 +59,11 @@ export default function QuotePublicView() {
         if (!r.ok) throw new Error("Quote not found");
         return r.json();
       })
-      .then(setQuote)
+      .then((data) => {
+        const q = normalizeQuote(data);
+        if (!q) throw new Error("Invalid quote");
+        setQuote(q);
+      })
       .catch(() => setError("No se pudo cargar la cotización."))
       .finally(() => setLoading(false));
   }, [quoteId]);
@@ -104,11 +84,14 @@ export default function QuotePublicView() {
     );
   }
 
-  const charges = typeof quote.included_charges === "string"
-    ? JSON.parse(quote.included_charges)
-    : quote.included_charges || {};
+  return <QuoteView quote={quote} quoteId={quoteId} />;
+}
 
-  const t = calcTotals(quote.items || [], charges);
+export function QuoteView({ quote, quoteId }: { quote: PublicQuoteData; quoteId: string }) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const charges = quote.charges as any;
+  const t = calcTotals(quote.items, charges, quote.dynamic_charges);
+  const groups = groupItems(quote.items);
 
   return (
     <div className="min-h-screen bg-gray-50 py-10 px-4">
@@ -124,8 +107,8 @@ export default function QuotePublicView() {
           </div>
           <div className="text-right">
             <div className="text-2xl font-bold tracking-widest text-gray-900">COTIZACIÓN</div>
-            <div className="text-sm text-gray-500 mt-1">{quote.quote_id}</div>
-            <div className="text-sm text-gray-400">{quote.created_at?.slice(0, 10)}</div>
+            <div className="text-sm text-gray-500 mt-1">{quote.label}</div>
+            <div className="text-sm text-gray-400">{quote.created_at}</div>
           </div>
         </div>
 
@@ -162,13 +145,24 @@ export default function QuotePublicView() {
               </tr>
             </thead>
             <tbody>
-              {quote.items.map((item: QuoteItem, i: number) => (
-                <tr key={i} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                  <td className="px-4 py-3">{item.product_name}</td>
-                  <td className="px-4 py-3 text-right">{item.quantity.toFixed(2)}</td>
-                  <td className="px-4 py-3 text-right">{fmt(item.unit_price)}</td>
-                  <td className="px-4 py-3 text-right">{fmt(item.quantity * item.unit_price)}</td>
-                </tr>
+              {groups.map((group, g) => (
+                <Fragment key={g}>
+                  {group.heading && (
+                    <tr className="bg-gray-100">
+                      <td colSpan={4} className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-gray-700">
+                        {group.heading}
+                      </td>
+                    </tr>
+                  )}
+                  {group.items.map((item, i) => (
+                    <tr key={i} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                      <td className="px-4 py-3">{item.product_name}</td>
+                      <td className="px-4 py-3 text-right">{item.quantity.toFixed(2)}</td>
+                      <td className="px-4 py-3 text-right">{fmt(item.unit_price)}</td>
+                      <td className="px-4 py-3 text-right">{fmt(item.quantity * item.unit_price)}</td>
+                    </tr>
+                  ))}
+                </Fragment>
               ))}
             </tbody>
           </table>
@@ -185,6 +179,11 @@ export default function QuotePublicView() {
               { label: `Seguro (${t.insurancePct}%)`, value: t.insurance, show: charges?.insurance },
               { label: `Transporte (${t.transportPct}%)`, value: t.transport, show: charges?.transport },
               { label: `Contingencia (${t.contingencyPct}%)`, value: t.contingency, show: charges?.contingency },
+              ...quote.dynamic_charges.map((d) => ({
+                label: `${d.name} (${d.percentage}%)`,
+                value: t.afterDiscount * (d.percentage / 100),
+                show: true,
+              })),
               { label: "Subtotal General", value: t.subtotalGeneral, show: true },
               { label: "ITBIS (18%)", value: t.itbis, show: true },
             ].filter(r => r.show).map((row, i) => (
