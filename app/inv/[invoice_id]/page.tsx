@@ -151,7 +151,7 @@ export default function InvoicePublicView() {
           <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm">
             <div><span className="font-semibold">Cliente:</span> {invoice.company_name}</div>
             <div><span className="font-semibold">Contacto:</span> {invoice.contact_name}</div>
-            <div><span className="font-semibold">Email:</span> {invoice.contact_email}</div>
+            <div><span className="font-semibold">Correo:</span> {invoice.contact_email}</div>
             <div><span className="font-semibold">Teléfono:</span> {invoice.contact_phone}</div>
             {invoice.notes && (
               <div className="col-span-2"><span className="font-semibold">Notas:</span> {invoice.notes}</div>

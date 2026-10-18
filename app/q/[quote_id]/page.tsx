@@ -118,7 +118,7 @@ export function QuoteView({ quote, quoteId }: { quote: PublicQuoteData; quoteId:
           <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm">
             <div><span className="font-semibold">Cliente:</span> {quote.company_name}</div>
             <div><span className="font-semibold">Contacto:</span> {quote.contact_name}</div>
-            <div><span className="font-semibold">Email:</span> {quote.contact_email}</div>
+            <div><span className="font-semibold">Correo:</span> {quote.contact_email}</div>
             <div><span className="font-semibold">Teléfono:</span> {quote.contact_phone}</div>
             {quote.project_name && (
               <div className="col-span-2"><span className="font-semibold">Proyecto:</span> {quote.project_name}</div>
