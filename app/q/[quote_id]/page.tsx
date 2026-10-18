@@ -3,15 +3,11 @@
 import { Fragment, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { normalizeQuote, groupItems, type PublicItem, type PublicQuoteData } from "@/lib/publicQuote";
+import { formatMoneyES } from "@/lib/formatMoney";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
-function fmt(n: number) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(n);
-}
+const fmt = formatMoneyES;
 
 function calcTotals(items: PublicItem[], charges: any, dynamicCharges: { percentage: number }[]) {
   const itemsTotal = items.reduce((sum, i) => sum + i.quantity * i.unit_price, 0);

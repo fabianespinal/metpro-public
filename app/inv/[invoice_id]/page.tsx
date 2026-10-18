@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { unwrapEnvelope } from "@/lib/publicQuote";
+import { formatMoneyES } from "@/lib/formatMoney";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
@@ -27,12 +28,7 @@ interface Invoice {
   included_charges: any;
 }
 
-function fmt(n: number) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(n);
-}
+const fmt = formatMoneyES;
 
 function calcTotals(items: InvoiceItem[], charges: any) {
   const itemsTotal = items.reduce((sum, i) => sum + i.quantity * i.unit_price, 0);
