@@ -2,44 +2,14 @@
 
 import { Fragment, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { normalizeQuote, groupItems, type PublicItem, type PublicQuoteData } from "@/lib/publicQuote";
+import { normalizeQuote, groupItems, type PublicQuoteData } from "@/lib/publicQuote";
 import { formatMoneyES } from "@/lib/formatMoney";
+import { computePublicTotals } from "@/lib/publicTotals";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 const fmt = formatMoneyES;
 
-function calcTotals(items: PublicItem[], charges: any, dynamicCharges: { percentage: number }[]) {
-  const itemsTotal = items.reduce((sum, i) => sum + i.quantity * i.unit_price, 0);
-  let totalDiscounts = 0;
-  for (const item of items) {
-    const subtotal = item.quantity * item.unit_price;
-    if (item.discount_type === "percentage") {
-      totalDiscounts += subtotal * ((item.discount_value) / 100);
-    } else if (item.discount_type === "fixed") {
-      totalDiscounts += item.discount_value;
-    }
-  }
-  const afterDiscount = itemsTotal - totalDiscounts;
-  const supervision = charges?.supervision ? afterDiscount * ((charges.supervision_percentage || 10) / 100) : 0;
-  const admin = charges?.admin ? afterDiscount * ((charges.admin_percentage || 4) / 100) : 0;
-  const insurance = charges?.insurance ? afterDiscount * ((charges.insurance_percentage || 1) / 100) : 0;
-  const transport = charges?.transport ? afterDiscount * ((charges.transport_percentage || 3) / 100) : 0;
-  const contingency = charges?.contingency ? afterDiscount * ((charges.contingency_percentage || 3) / 100) : 0;
-  const dynamicTotal = dynamicCharges.reduce((sum, d) => sum + afterDiscount * (d.percentage / 100), 0);
-  const subtotalGeneral = afterDiscount + supervision + admin + insurance + transport + contingency + dynamicTotal;
-  const itbis = subtotalGeneral * 0.18;
-  const grandTotal = subtotalGeneral + itbis;
-  return {
-    itemsTotal, totalDiscounts, afterDiscount,
-    supervision, supervisionPct: charges?.supervision_percentage || 10,
-    admin, adminPct: charges?.admin_percentage || 4,
-    insurance, insurancePct: charges?.insurance_percentage || 1,
-    transport, transportPct: charges?.transport_percentage || 3,
-    contingency, contingencyPct: charges?.contingency_percentage || 3,
-    dynamicTotal, subtotalGeneral, itbis, grandTotal,
-  };
-}
 
 export default function QuotePublicView() {
   const params = useParams();
@@ -84,9 +54,7 @@ export default function QuotePublicView() {
 }
 
 export function QuoteView({ quote, quoteId }: { quote: PublicQuoteData; quoteId: string }) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const charges = quote.charges as any;
-  const t = calcTotals(quote.items, charges, quote.dynamic_charges);
+  const t = computePublicTotals(quote.items, quote.charges);
   const groups = groupItems(quote.items);
 
   return (
@@ -170,27 +138,22 @@ export function QuoteView({ quote, quoteId }: { quote: PublicQuoteData; quoteId:
             <div className="text-xs font-bold tracking-widest uppercase text-gray-400 mb-4">Resumen Financiero</div>
             {[
               { label: "Subtotal de Items", value: t.itemsTotal, show: true },
-              { label: `Supervisión (${t.supervisionPct}%)`, value: t.supervision, show: charges?.supervision },
-              { label: `Administración (${t.adminPct}%)`, value: t.admin, show: charges?.admin },
-              { label: `Seguro (${t.insurancePct}%)`, value: t.insurance, show: charges?.insurance },
-              { label: `Transporte (${t.transportPct}%)`, value: t.transport, show: charges?.transport },
-              { label: `Contingencia (${t.contingencyPct}%)`, value: t.contingency, show: charges?.contingency },
-              ...quote.dynamic_charges.map((d) => ({
-                label: `${d.name} (${d.percentage}%)`,
-                value: t.afterDiscount * (d.percentage / 100),
-                show: true,
-              })),
+              { label: "Total Descuentos", value: -t.totalDiscounts, show: t.totalDiscounts > 0 },
+              { label: "Después de Descuentos", value: t.afterDiscount, show: t.totalDiscounts > 0 },
+              ...t.charges.map((c) => ({ label: c.label, value: c.value, show: true })),
               { label: "Subtotal General", value: t.subtotalGeneral, show: true },
               { label: "ITBIS (18%)", value: t.itbis, show: true },
-            ].filter(r => r.show).map((row, i) => (
-              <div key={i} className="flex justify-between py-2 border-b border-gray-100">
-                <span className="text-gray-600">{row.label}</span>
-                <span>{fmt(row.value)}</span>
-              </div>
-            ))}
+            ]
+              .filter((r) => r.show)
+              .map((row, i) => (
+                <div key={i} className="flex justify-between gap-4 py-2 border-b border-gray-100">
+                  <span className="text-gray-600">{row.label}</span>
+                  <span className="whitespace-nowrap">{fmt(row.value)}</span>
+                </div>
+              ))}
             <div className="flex justify-between py-3 font-bold text-base border-t-2 border-gray-900 mt-1">
               <span>TOTAL GENERAL</span>
-              <span>{fmt(t.grandTotal)}</span>
+              <span className="whitespace-nowrap">{fmt(t.grandTotal)}</span>
             </div>
           </div>
         </div>
