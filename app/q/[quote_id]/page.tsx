@@ -58,18 +58,18 @@ export function QuoteView({ quote, quoteId }: { quote: PublicQuoteData; quoteId:
   const groups = groupItems(quote.items);
 
   return (
-    <div className="min-h-screen bg-gray-50 py-10 px-4">
+    <div className="min-h-screen bg-gray-50 py-6 px-3 sm:py-10 sm:px-4">
       <div className="max-w-3xl mx-auto bg-white shadow-sm border border-gray-100 rounded-sm">
 
         {/* Header */}
-        <div className="flex justify-between items-start p-8 border-b border-gray-200">
+        <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-start p-5 sm:p-8 border-b border-gray-200">
           <div>
             <div className="text-lg font-bold text-gray-900">Metpro SRL</div>
             <div className="text-sm text-gray-500 mt-1">Parque Industrial Disdo</div>
             <div className="text-sm text-gray-500 mt-1">Calle Central No. 1, Hato Nuevo Palave</div>
             <div className="text-sm text-gray-500">Tel: (829) 439-8476 | RNC: 131-71683-2</div>
           </div>
-          <div className="text-right">
+          <div className="sm:text-right">
             <div className="text-2xl font-bold tracking-widest text-gray-900">COTIZACIÓN</div>
             <div className="text-sm text-gray-500 mt-1">{quote.label}</div>
             <div className="text-sm text-gray-400">{quote.created_at}</div>
@@ -77,15 +77,15 @@ export function QuoteView({ quote, quoteId }: { quote: PublicQuoteData; quoteId:
         </div>
 
         {/* Client Info */}
-        <div className="p-8 border-b border-gray-200">
+        <div className="p-5 sm:p-8 border-b border-gray-200">
           <div className="text-xs font-bold tracking-widest uppercase text-gray-400 mb-4">Información del Cliente</div>
-          <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2 text-sm break-words">
             <div><span className="font-semibold">Cliente:</span> {quote.company_name}</div>
             <div><span className="font-semibold">Contacto:</span> {quote.contact_name}</div>
             <div><span className="font-semibold">Correo:</span> {quote.contact_email}</div>
             <div><span className="font-semibold">Teléfono:</span> {quote.contact_phone}</div>
             {quote.project_name && (
-              <div className="col-span-2"><span className="font-semibold">Proyecto:</span> {quote.project_name}</div>
+              <div className="sm:col-span-2"><span className="font-semibold">Proyecto:</span> {quote.project_name}</div>
             )}
             {quote.valid_until && (
               <div><span className="font-semibold">Válido hasta:</span> {quote.valid_until}</div>
@@ -97,15 +97,16 @@ export function QuoteView({ quote, quoteId }: { quote: PublicQuoteData; quoteId:
         </div>
 
         {/* Items */}
-        <div className="p-8 border-b border-gray-200">
+        <div className="p-5 sm:p-8 border-b border-gray-200">
           <div className="text-xs font-bold tracking-widest uppercase text-gray-400 mb-4">Detalle de Items</div>
-          <table className="w-full text-sm">
+          <div className="-mx-5 overflow-x-auto sm:mx-0">
+          <table className="w-full min-w-[520px] text-sm">
             <thead>
               <tr className="bg-gray-900 text-white">
-                <th className="text-left px-4 py-3 font-semibold tracking-wide">Descripción</th>
-                <th className="text-right px-4 py-3 font-semibold tracking-wide">Cant.</th>
-                <th className="text-right px-4 py-3 font-semibold tracking-wide">Precio Unit.</th>
-                <th className="text-right px-4 py-3 font-semibold tracking-wide">Total</th>
+                <th className="text-left px-3 sm:px-4 py-3 font-semibold tracking-wide">Descripción</th>
+                <th className="text-right px-3 sm:px-4 py-3 font-semibold tracking-wide">Cant.</th>
+                <th className="text-right px-3 sm:px-4 py-3 font-semibold tracking-wide">Precio Unit.</th>
+                <th className="text-right px-3 sm:px-4 py-3 font-semibold tracking-wide">Total</th>
               </tr>
             </thead>
             <tbody>
@@ -120,21 +121,22 @@ export function QuoteView({ quote, quoteId }: { quote: PublicQuoteData; quoteId:
                   )}
                   {group.items.map((item, i) => (
                     <tr key={i} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                      <td className="px-4 py-3">{item.product_name}</td>
-                      <td className="px-4 py-3 text-right">{item.quantity.toFixed(2)}</td>
-                      <td className="px-4 py-3 text-right">{fmt(item.unit_price)}</td>
-                      <td className="px-4 py-3 text-right">{fmt(item.quantity * item.unit_price)}</td>
+                      <td className="px-3 sm:px-4 py-3">{item.product_name}</td>
+                      <td className="px-3 sm:px-4 py-3 text-right">{item.quantity.toFixed(2)}</td>
+                      <td className="px-3 sm:px-4 py-3 text-right">{fmt(item.unit_price)}</td>
+                      <td className="px-3 sm:px-4 py-3 text-right">{fmt(item.quantity * item.unit_price)}</td>
                     </tr>
                   ))}
                 </Fragment>
               ))}
             </tbody>
           </table>
+          </div>
         </div>
 
         {/* Totals */}
-        <div className="p-8 border-b border-gray-200 flex justify-end">
-          <div className="w-80 text-sm">
+        <div className="p-5 sm:p-8 border-b border-gray-200 flex sm:justify-end">
+          <div className="w-full sm:w-80 text-sm">
             <div className="text-xs font-bold tracking-widest uppercase text-gray-400 mb-4">Resumen Financiero</div>
             {[
               { label: "Subtotal de Items", value: t.itemsTotal, show: true },
@@ -160,14 +162,14 @@ export function QuoteView({ quote, quoteId }: { quote: PublicQuoteData; quoteId:
 
         {/* Notes */}
         {quote.notes && (
-          <div className="p-8 border-b border-gray-200">
+          <div className="p-5 sm:p-8 border-b border-gray-200">
             <div className="text-xs font-bold tracking-widest uppercase text-gray-400 mb-4">Notas</div>
             <p className="text-sm text-gray-600 leading-relaxed">{quote.notes}</p>
           </div>
         )}
 
         {/* Actions */}
-        <div className="p-8 flex justify-center">
+        <div className="p-5 sm:p-8 flex justify-center">
           <a
             href={`${API_URL}/quotes/public/${quoteId}/pdf`}
             target="_blank"
