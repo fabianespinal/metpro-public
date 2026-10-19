@@ -1,5 +1,6 @@
 "use client";
 
+import { qty } from "@/lib/qty"
 import { Fragment, useEffect, useState } from "react";
 import { fmtDay, fmtTimestamp } from "@/lib/dates";
 import { useParams } from "next/navigation";
@@ -180,7 +181,7 @@ export default function InvoicePublicView() {
                   {group.items.map((item: InvoiceItem, i: number) => (
                     <tr key={i} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
                       <td className="px-3 sm:px-4 py-3">{item.product_name}</td>
-                      <td className="px-3 sm:px-4 py-3 text-right">{Number(item.quantity).toFixed(2)}</td>
+                      <td className="px-3 sm:px-4 py-3 text-right">{qty(item.quantity)}</td>
                       <td className="px-3 sm:px-4 py-3 text-right">{fmt(Number(item.unit_price))}</td>
                       <td className="px-3 sm:px-4 py-3 text-right">{fmt(Number(item.quantity) * Number(item.unit_price))}</td>
                     </tr>
