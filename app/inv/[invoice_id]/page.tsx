@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useState } from "react";
+import { fmtDay, fmtTimestamp } from "@/lib/dates";
 import { useParams } from "next/navigation";
 import { unwrapEnvelope } from "@/lib/publicQuote";
 import { formatMoneyES } from "@/lib/formatMoney";
@@ -21,6 +22,7 @@ interface Invoice {
   invoice_number: string;
   notes: string;
   created_at: string;
+  invoice_date?: string | null;
   company_name: string;
   company_address?: string;
   contact_name: string;
@@ -116,9 +118,18 @@ export default function InvoicePublicView() {
           <div className="sm:text-right">
             <div className="text-2xl font-bold tracking-widest text-gray-900">FACTURA</div>
             <div className="text-sm text-gray-500 mt-1">{invoice.invoice_number}</div>
-            <div className="text-sm text-gray-400">{invoice.created_at?.slice(0, 10)}</div>
+            <div className="text-sm text-gray-400">
+              {invoice.invoice_date ? fmtDay(invoice.invoice_date) : fmtTimestamp(invoice.created_at)}
+            </div>
           </div>
         </div>
+
+        {/* X-06: a cancelled invoice is not payable */}
+        {invoice.status === "Cancelled" && (
+          <div role="status" className="border-b border-red-200 bg-red-50 px-5 py-3 text-sm font-semibold text-red-700 sm:px-8">
+            Esta factura fue anulada y no requiere pago.
+          </div>
+        )}
 
         {/* Client Info */}
         <div className="p-5 sm:p-8 border-b border-gray-200">
@@ -135,7 +146,7 @@ export default function InvoicePublicView() {
               <div><span className="font-semibold">Términos de pago:</span> {invoice.payment_terms}</div>
             )}
             {invoice.valid_until && (
-              <div><span className="font-semibold">Válida hasta:</span> {String(invoice.valid_until).slice(0, 10)}</div>
+              <div><span className="font-semibold">Válida hasta:</span> {fmtDay(String(invoice.valid_until))}</div>
             )}
             {invoice.notes && (
               <div className="sm:col-span-2"><span className="font-semibold">Notas:</span> {invoice.notes}</div>
@@ -206,7 +217,7 @@ export default function InvoicePublicView() {
               <span>TOTAL GENERAL</span>
               <span className="whitespace-nowrap">{fmt(grandTotal)}</span>
             </div>
-            {paid > 0 && (
+            {paid > 0 && invoice.status !== "Cancelled" && (
               <>
                 <div className="flex justify-between gap-4 py-2 border-b border-gray-100">
                   <span className="text-gray-600">Total pagado</span>

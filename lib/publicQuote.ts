@@ -93,7 +93,7 @@ export function normalizeQuote(input: unknown): PublicQuoteData | null {
     project_name: str(q.project_name),
     notes: str(q.notes),
     status: str(q.status),
-    created_at: str(q.created_at).slice(0, 10),
+    created_at: str(q.created_at), // full timestamp; the page shows its Santo Domingo day
     valid_until: str(q.valid_until).slice(0, 10),
     payment_terms: str(q.payment_terms),
     company_name: str(q.company_name),

@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { normalizeQuote, groupItems, type PublicQuoteData } from "@/lib/publicQuote";
 import { formatMoneyES } from "@/lib/formatMoney";
 import { computePublicTotals } from "@/lib/publicTotals";
+import { fmtDay, fmtTimestamp, quoteNotice } from "@/lib/dates";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
@@ -72,9 +73,16 @@ export function QuoteView({ quote, quoteId }: { quote: PublicQuoteData; quoteId:
           <div className="sm:text-right">
             <div className="text-2xl font-bold tracking-widest text-gray-900">COTIZACIÓN</div>
             <div className="text-sm text-gray-500 mt-1">{quote.label}</div>
-            <div className="text-sm text-gray-400">{quote.created_at}</div>
+            <div className="text-sm text-gray-400">{fmtTimestamp(quote.created_at)}</div>
           </div>
         </div>
+
+        {/* X-06: rejected or expired quotes say so */}
+        {quoteNotice(quote.status, quote.valid_until) && (
+          <div role="status" className="border-b border-amber-200 bg-amber-50 px-5 py-3 text-sm font-semibold text-amber-800 sm:px-8">
+            {quoteNotice(quote.status, quote.valid_until)}
+          </div>
+        )}
 
         {/* Client Info */}
         <div className="p-5 sm:p-8 border-b border-gray-200">
@@ -88,7 +96,7 @@ export function QuoteView({ quote, quoteId }: { quote: PublicQuoteData; quoteId:
               <div className="sm:col-span-2"><span className="font-semibold">Proyecto:</span> {quote.project_name}</div>
             )}
             {quote.valid_until && (
-              <div><span className="font-semibold">Válido hasta:</span> {quote.valid_until}</div>
+              <div><span className="font-semibold">Válido hasta:</span> {fmtDay(quote.valid_until)}</div>
             )}
             {quote.payment_terms && (
               <div><span className="font-semibold">Términos de pago:</span> {quote.payment_terms}</div>
