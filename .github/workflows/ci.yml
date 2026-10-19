@@ -1,0 +1,31 @@
+# Debug pass 5d: type check, lint, unit tests and production build on every push and PR.
+# Informational: Railway still deploys main on push. A red run means "do not trust this deploy".
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NEXT_PUBLIC_API_URL: https://api.example.invalid
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Type check
+        run: npm run typecheck
+      - name: Lint
+        run: npx eslint .
+      - name: Unit tests
+        run: npm test
+      - name: Build
+        run: npm run build
