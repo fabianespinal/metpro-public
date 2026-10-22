@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computePublicTotals } from "@/lib/publicTotals";
+import { computePublicTotals, serverBase } from "@/lib/publicTotals";
 import { formatMoneyES } from "@/lib/formatMoney";
 
 describe("computePublicTotals (same math as the backend)", () => {
@@ -55,5 +55,32 @@ describe("document tax rate (A1)", () => {
   });
   it("a rate without a label never prints a wrong percentage", () => {
     expect(taxDisplay(0.018, "")).toEqual({ rate: 0.018, label: "ITBIS" });
+  });
+});
+
+describe("A3 hidden lines: the backend base wins, nothing is redistributed", () => {
+  const visible = [{ quantity: 2, unit_price: 500, discount_type: "none", discount_value: 0 }];
+  it("without a server base the visible rows decide (unchanged behaviour)", () => {
+    const t = computePublicTotals(visible, "{}", 0.18);
+    expect(t.itemsTotal).toBe(1000);
+    expect(t.grandTotal).toBeCloseTo(1180, 2);
+  });
+  it("with a server base the hidden 300 stays in the totals while the rows show only the visible line", () => {
+    const t = computePublicTotals(visible, "{}", 0.18, { itemsTotal: 1300, totalDiscounts: 0 });
+    expect(t.itemsTotal).toBe(1300);
+    expect(t.grandTotal).toBeCloseTo(1534, 2);
+  });
+  it("charges follow the server base", () => {
+    const t = computePublicTotals(visible, JSON.stringify({ supervision: true, supervision_percentage: 10 }), 0.18, {
+      itemsTotal: 1300,
+      totalDiscounts: 100,
+    });
+    expect(t.afterDiscount).toBe(1200);
+    expect(t.charges[0].value).toBeCloseTo(120, 2);
+  });
+  it("reads display_totals only when it is well formed", () => {
+    expect(serverBase(undefined)).toBeNull();
+    expect(serverBase({})).toBeNull();
+    expect(serverBase({ items_total: "1300.00", total_discounts: 0 })).toEqual({ itemsTotal: 1300, totalDiscounts: 0 });
   });
 });

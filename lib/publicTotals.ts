@@ -71,14 +71,41 @@ export function taxDisplay(rate: unknown, label: unknown): { rate: number; label
   return { rate: PRE_A1_RATE, label: text || PRE_A1_LABEL };
 }
 
-export function computePublicTotals(items: TotalsItem[], rawCharges: unknown, taxRate: number = PRE_A1_RATE): PublicTotals {
+/** A3: the backend's own base amounts, sent when some lines are hidden from the customer. */
+export interface ServerBase {
+  itemsTotal: number;
+  totalDiscounts: number;
+}
+
+/** Reads `display_totals` from a public payload. Null when the API sends none (no hidden lines, or an older backend). */
+export function serverBase(raw: unknown): ServerBase | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Record<string, unknown>;
+  const items = Number(r.items_total);
+  const disc = Number(r.total_discounts);
+  if (r.items_total === null || r.items_total === undefined || !Number.isFinite(items)) return null;
+  return { itemsTotal: items, totalDiscounts: Number.isFinite(disc) ? disc : 0 };
+}
+
+export function computePublicTotals(
+  items: TotalsItem[],
+  rawCharges: unknown,
+  taxRate: number = PRE_A1_RATE,
+  base: ServerBase | null = null
+): PublicTotals {
   const charges = parseCharges(rawCharges);
-  const itemsTotal = items.reduce((s, i) => s + num(i.quantity) * num(i.unit_price), 0);
+  // A3: with hidden lines the visible rows no longer add up to the billed base. Hide only: use the backend's base,
+  // never re-spread the hidden amount over the visible lines.
+  let itemsTotal = items.reduce((s, i) => s + num(i.quantity) * num(i.unit_price), 0);
   let totalDiscounts = 0;
   for (const i of items) {
     const line = num(i.quantity) * num(i.unit_price);
     if (i.discount_type === "percentage") totalDiscounts += line * (num(i.discount_value) / 100);
     else if (i.discount_type === "fixed") totalDiscounts += num(i.discount_value);
+  }
+  if (base) {
+    itemsTotal = base.itemsTotal;
+    totalDiscounts = base.totalDiscounts;
   }
   const afterDiscount = itemsTotal - totalDiscounts;
 

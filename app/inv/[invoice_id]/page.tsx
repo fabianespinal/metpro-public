@@ -6,7 +6,7 @@ import { fmtDay, fmtTimestamp } from "@/lib/dates";
 import { useParams } from "next/navigation";
 import { unwrapEnvelope } from "@/lib/publicQuote";
 import { formatMoneyES } from "@/lib/formatMoney";
-import { computePublicTotals, taxDisplay } from "@/lib/publicTotals";
+import { computePublicTotals, serverBase, taxDisplay } from "@/lib/publicTotals";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
@@ -40,6 +40,8 @@ interface Invoice {
   valid_until?: string | null;
   tax_rate?: number | string | null;
   tax_label?: string | null;
+  /** A3: backend base amounts when some lines are hidden from the customer. */
+  display_totals?: unknown;
 }
 
 const fmt = formatMoneyES;
@@ -100,7 +102,7 @@ export default function InvoicePublicView() {
   }
 
   const tax = taxDisplay(invoice.tax_rate, invoice.tax_label);
-  const t = computePublicTotals(invoice.items || [], invoice.included_charges, tax.rate);
+  const t = computePublicTotals(invoice.items || [], invoice.included_charges, tax.rate, serverBase(invoice.display_totals));
   // The billed amount is authoritative (same rule as the invoice PDF).
   const billed = invoice.total_amount === null || invoice.total_amount === undefined ? NaN : Number(invoice.total_amount);
   const grandTotal = Number.isFinite(billed) ? billed : t.grandTotal;

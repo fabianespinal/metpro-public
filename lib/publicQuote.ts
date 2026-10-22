@@ -3,6 +3,8 @@
  * Every field is defaulted so a quote of any age renders instead of throwing.
  */
 
+import { serverBase, type ServerBase } from "@/lib/publicTotals";
+
 export interface PublicItem {
   product_name: string;
   quantity: number;
@@ -32,6 +34,8 @@ export interface PublicQuoteData {
   /** A1: the quote's stored tax snapshot. Null when the API sends none (pre-A1 backend). */
   tax_rate: number | null;
   tax_label: string;
+  /** A3: the backend's base amounts when some lines are hidden from the customer. Null otherwise. */
+  display_totals: ServerBase | null;
 }
 
 /** The API answers {"data": payload, "success": true}. Return the payload; pass anything else through. */
@@ -109,6 +113,7 @@ export function normalizeQuote(input: unknown): PublicQuoteData | null {
     dynamic_charges,
     tax_rate: q.tax_rate === null || q.tax_rate === undefined || q.tax_rate === "" || !Number.isFinite(Number(q.tax_rate)) ? null : Number(q.tax_rate),
     tax_label: str(q.tax_label).trim(),
+    display_totals: serverBase(q.display_totals),
   };
 }
 

@@ -57,7 +57,7 @@ export default function QuotePublicView() {
 
 export function QuoteView({ quote, quoteId }: { quote: PublicQuoteData; quoteId: string }) {
   const tax = taxDisplay(quote.tax_rate, quote.tax_label);
-  const t = computePublicTotals(quote.items, quote.charges, tax.rate);
+  const t = computePublicTotals(quote.items, quote.charges, tax.rate, quote.display_totals);
   const groups = groupItems(quote.items);
 
   return (
