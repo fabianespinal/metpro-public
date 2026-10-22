@@ -29,6 +29,9 @@ export interface PublicQuoteData {
   items: PublicItem[];
   charges: Record<string, unknown>;
   dynamic_charges: { name: string; percentage: number }[];
+  /** A1: the quote's stored tax snapshot. Null when the API sends none (pre-A1 backend). */
+  tax_rate: number | null;
+  tax_label: string;
 }
 
 /** The API answers {"data": payload, "success": true}. Return the payload; pass anything else through. */
@@ -104,6 +107,8 @@ export function normalizeQuote(input: unknown): PublicQuoteData | null {
     items,
     charges,
     dynamic_charges,
+    tax_rate: q.tax_rate === null || q.tax_rate === undefined || q.tax_rate === "" || !Number.isFinite(Number(q.tax_rate)) ? null : Number(q.tax_rate),
+    tax_label: str(q.tax_label).trim(),
   };
 }
 

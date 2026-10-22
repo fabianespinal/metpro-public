@@ -6,7 +6,7 @@ import { fmtDay, fmtTimestamp } from "@/lib/dates";
 import { useParams } from "next/navigation";
 import { unwrapEnvelope } from "@/lib/publicQuote";
 import { formatMoneyES } from "@/lib/formatMoney";
-import { computePublicTotals } from "@/lib/publicTotals";
+import { computePublicTotals, taxDisplay } from "@/lib/publicTotals";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
@@ -38,6 +38,8 @@ interface Invoice {
   project_name?: string | null;
   payment_terms?: string | null;
   valid_until?: string | null;
+  tax_rate?: number | string | null;
+  tax_label?: string | null;
 }
 
 const fmt = formatMoneyES;
@@ -97,7 +99,8 @@ export default function InvoicePublicView() {
     );
   }
 
-  const t = computePublicTotals(invoice.items || [], invoice.included_charges);
+  const tax = taxDisplay(invoice.tax_rate, invoice.tax_label);
+  const t = computePublicTotals(invoice.items || [], invoice.included_charges, tax.rate);
   // The billed amount is authoritative (same rule as the invoice PDF).
   const billed = invoice.total_amount === null || invoice.total_amount === undefined ? NaN : Number(invoice.total_amount);
   const grandTotal = Number.isFinite(billed) ? billed : t.grandTotal;
@@ -204,7 +207,7 @@ export default function InvoicePublicView() {
               { label: "Después de Descuentos", value: t.afterDiscount, show: t.totalDiscounts > 0 },
               ...t.charges.map((c) => ({ label: c.label, value: c.value, show: true })),
               { label: "Subtotal General", value: t.subtotalGeneral, show: true },
-              { label: "ITBIS (18%)", value: t.itbis, show: true },
+              { label: tax.label, value: t.itbis, show: true },
             ]
               .filter((r) => r.show)
               .map((row, i) => (

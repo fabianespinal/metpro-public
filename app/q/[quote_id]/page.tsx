@@ -5,7 +5,7 @@ import { Fragment, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { normalizeQuote, groupItems, type PublicQuoteData } from "@/lib/publicQuote";
 import { formatMoneyES } from "@/lib/formatMoney";
-import { computePublicTotals } from "@/lib/publicTotals";
+import { computePublicTotals, taxDisplay } from "@/lib/publicTotals";
 import { fmtDay, fmtTimestamp, quoteNotice } from "@/lib/dates";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
@@ -56,7 +56,8 @@ export default function QuotePublicView() {
 }
 
 export function QuoteView({ quote, quoteId }: { quote: PublicQuoteData; quoteId: string }) {
-  const t = computePublicTotals(quote.items, quote.charges);
+  const tax = taxDisplay(quote.tax_rate, quote.tax_label);
+  const t = computePublicTotals(quote.items, quote.charges, tax.rate);
   const groups = groupItems(quote.items);
 
   return (
@@ -153,7 +154,7 @@ export function QuoteView({ quote, quoteId }: { quote: PublicQuoteData; quoteId:
               { label: "Después de Descuentos", value: t.afterDiscount, show: t.totalDiscounts > 0 },
               ...t.charges.map((c) => ({ label: c.label, value: c.value, show: true })),
               { label: "Subtotal General", value: t.subtotalGeneral, show: true },
-              { label: "ITBIS (18%)", value: t.itbis, show: true },
+              { label: tax.label, value: t.itbis, show: true },
             ]
               .filter((r) => r.show)
               .map((row, i) => (

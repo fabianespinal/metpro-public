@@ -3,7 +3,8 @@
  * Mirrors the backend (quotes.service.calculate_quote_totals) exactly:
  * - a charge percentage falls back to its default only when the key is absent (0 stays 0);
  * - dynamic charges count only when enabled is truthy, first 3 only, as a percentage of items_after_discount;
- * - ITBIS 18% on subtotal_general.
+ * - tax = the document's own rate on subtotal_general (A1: tax_rate from the API). A backend that sends no rate
+ *   is the pre-A1 backend, where every document is 18%.
  * Display only. The billed amount stays the source of truth for invoices.
  */
 
@@ -58,7 +59,19 @@ export function parseCharges(raw: unknown): Record<string, unknown> {
 
 const pctLabel = (p: number) => `${Number(p.toFixed(2))}%`;
 
-export function computePublicTotals(items: TotalsItem[], rawCharges: unknown): PublicTotals {
+/** Pre-A1 backends send no tax_rate and every document was taxed at 18%. */
+const PRE_A1_RATE = 0.18;
+const PRE_A1_LABEL = "ITBIS (18%)";
+
+/** Rate and label to show. Both come from the document; the pre-A1 pair is used only when the API sends neither. */
+export function taxDisplay(rate: unknown, label: unknown): { rate: number; label: string } {
+  const r = rate === null || rate === undefined || rate === "" ? NaN : Number(rate);
+  const text = typeof label === "string" ? label.trim() : "";
+  if (Number.isFinite(r)) return { rate: r, label: text || "ITBIS" };
+  return { rate: PRE_A1_RATE, label: text || PRE_A1_LABEL };
+}
+
+export function computePublicTotals(items: TotalsItem[], rawCharges: unknown, taxRate: number = PRE_A1_RATE): PublicTotals {
   const charges = parseCharges(rawCharges);
   const itemsTotal = items.reduce((s, i) => s + num(i.quantity) * num(i.unit_price), 0);
   let totalDiscounts = 0;
@@ -86,6 +99,6 @@ export function computePublicTotals(items: TotalsItem[], rawCharges: unknown): P
   }
 
   const subtotalGeneral = afterDiscount + rows.reduce((s, r) => s + r.value, 0);
-  const itbis = subtotalGeneral * 0.18;
+  const itbis = subtotalGeneral * taxRate;
   return { itemsTotal, totalDiscounts, afterDiscount, charges: rows, subtotalGeneral, itbis, grandTotal: subtotalGeneral + itbis };
 }

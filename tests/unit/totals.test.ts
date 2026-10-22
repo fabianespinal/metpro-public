@@ -31,3 +31,29 @@ describe("formatMoneyES", () => {
     expect(formatMoneyES(-0.001)).toBe("RD$ 0.00");
   });
 });
+
+import { taxDisplay } from "@/lib/publicTotals";
+
+describe("document tax rate (A1)", () => {
+  const items = [{ quantity: 2, unit_price: 500, discount_type: "none", discount_value: 0 }];
+  it("uses the rate of the document", () => {
+    const t = computePublicTotals(items, "{}", 0.018);
+    expect(t.itbis).toBeCloseTo(18, 6);
+    expect(t.grandTotal).toBeCloseTo(1018, 6);
+  });
+  it("a zero rate is a rate", () => {
+    expect(computePublicTotals(items, "{}", 0).itbis).toBe(0);
+  });
+  it("taxDisplay prints the stored label with the stored rate", () => {
+    expect(taxDisplay(0.018, "Ley 17-2017 (1.8%)")).toEqual({ rate: 0.018, label: "Ley 17-2017 (1.8%)" });
+    expect(taxDisplay("0.1800", "ITBIS (18%)")).toEqual({ rate: 0.18, label: "ITBIS (18%)" });
+    expect(taxDisplay(0, "Exento").rate).toBe(0);
+  });
+  it("a pre-A1 backend sends nothing: 18% and the old label", () => {
+    expect(taxDisplay(undefined, undefined)).toEqual({ rate: 0.18, label: "ITBIS (18%)" });
+    expect(taxDisplay(null, "")).toEqual({ rate: 0.18, label: "ITBIS (18%)" });
+  });
+  it("a rate without a label never prints a wrong percentage", () => {
+    expect(taxDisplay(0.018, "")).toEqual({ rate: 0.018, label: "ITBIS" });
+  });
+});
