@@ -75,6 +75,11 @@ export function taxDisplay(rate: unknown, label: unknown): { rate: number; label
 export interface ServerBase {
   itemsTotal: number;
   totalDiscounts: number;
+  /** Present when the backend sends its full customer totals. The page then shows them as they are. */
+  afterDiscount?: number;
+  subtotalGeneral?: number;
+  itbis?: number;
+  grandTotal?: number;
 }
 
 /** Reads `display_totals` from a public payload. Null when the API sends none (no hidden lines, or an older backend). */
@@ -84,7 +89,22 @@ export function serverBase(raw: unknown): ServerBase | null {
   const items = Number(r.items_total);
   const disc = Number(r.total_discounts);
   if (r.items_total === null || r.items_total === undefined || !Number.isFinite(items)) return null;
-  return { itemsTotal: items, totalDiscounts: Number.isFinite(disc) ? disc : 0 };
+  const base: ServerBase = { itemsTotal: items, totalDiscounts: Number.isFinite(disc) ? disc : 0 };
+  const sub = Number(r.subtotal_general);
+  const tax = Number(r.itbis);
+  const grand = Number(r.grand_total);
+  if (
+    r.subtotal_general !== null && r.subtotal_general !== undefined && Number.isFinite(sub) &&
+    r.itbis !== null && r.itbis !== undefined && Number.isFinite(tax) &&
+    r.grand_total !== null && r.grand_total !== undefined && Number.isFinite(grand)
+  ) {
+    const after = Number(r.items_after_discount);
+    base.afterDiscount = r.items_after_discount !== null && r.items_after_discount !== undefined && Number.isFinite(after) ? after : base.itemsTotal - base.totalDiscounts;
+    base.subtotalGeneral = sub;
+    base.itbis = tax;
+    base.grandTotal = grand;
+  }
+  return base;
 }
 
 export function computePublicTotals(
@@ -106,6 +126,19 @@ export function computePublicTotals(
   if (base) {
     itemsTotal = base.itemsTotal;
     totalDiscounts = base.totalDiscounts;
+  }
+  // Approved 2026-10-22: customers never see the indirect-cost breakdown. With the backend's full totals the page
+  // shows them as sent: no charge rows, no local tax math.
+  if (base && base.subtotalGeneral !== undefined && base.itbis !== undefined && base.grandTotal !== undefined) {
+    return {
+      itemsTotal,
+      totalDiscounts,
+      afterDiscount: base.afterDiscount ?? itemsTotal - totalDiscounts,
+      charges: [],
+      subtotalGeneral: base.subtotalGeneral,
+      itbis: base.itbis,
+      grandTotal: base.grandTotal,
+    };
   }
   const afterDiscount = itemsTotal - totalDiscounts;
 

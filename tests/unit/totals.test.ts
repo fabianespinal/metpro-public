@@ -84,3 +84,27 @@ describe("A3 hidden lines: the backend base wins, nothing is redistributed", () 
     expect(serverBase({ items_total: "1300.00", total_discounts: 0 })).toEqual({ itemsTotal: 1300, totalDiscounts: 0 });
   });
 });
+
+describe("customer totals come from the backend, with no charge breakdown", () => {
+  const visible = [{ quantity: 2, unit_price: 500, discount_type: "none", discount_value: 0 }];
+  const dt = {
+    items_total: "1300.00", total_discounts: "100.00", items_after_discount: "1200.00",
+    subtotal_general: "1440.00", itbis: "25.92", grand_total: "1465.92",
+  };
+  it("serverBase reads the full totals", () => {
+    expect(serverBase(dt)).toEqual({
+      itemsTotal: 1300, totalDiscounts: 100, afterDiscount: 1200, subtotalGeneral: 1440, itbis: 25.92, grandTotal: 1465.92,
+    });
+  });
+  it("shows the server numbers and no charge rows, even if charges were sent", () => {
+    const t = computePublicTotals(visible, JSON.stringify({ supervision: true }), 0.018, serverBase(dt));
+    expect(t.charges).toEqual([]);
+    expect(t.subtotalGeneral).toBe(1440);
+    expect(t.itbis).toBe(25.92);
+    expect(t.grandTotal).toBe(1465.92);
+  });
+  it("a payload without subtotal_general keeps the older behaviour", () => {
+    expect(serverBase({ items_total: 10, total_discounts: 0 })).toEqual({ itemsTotal: 10, totalDiscounts: 0 });
+  });
+});
+
