@@ -160,7 +160,8 @@ export default function InvoicePublicView() {
           </div>
         </div>
 
-        {/* Items */}
+        {/* Items. Hidden when the quote checkbox is off: the backend sends no lines, only the totals. */}
+        {(invoice.items || []).length > 0 && (
         <div className="p-5 sm:p-8 border-b border-gray-200">
           <div className="text-xs font-bold tracking-widest uppercase text-gray-400 mb-4">Detalle de Items</div>
           <div className="-mx-5 overflow-x-auto sm:mx-0">
@@ -197,6 +198,7 @@ export default function InvoicePublicView() {
           </table>
           </div>
         </div>
+        )}
 
         {/* Totals */}
         <div className="p-5 sm:p-8 border-b border-gray-200 flex sm:justify-end">
